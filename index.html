@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Say / Do: a daily corporate radar</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#0a0a0a;--sf:#111a15;--ink:#e9efe9;--mu:#8fa396;--g:#4cf2a0;--ln:#1f3328;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a0a0a;--sf:#111a15;--ink:#e9efe9;--mu:#8fa396;--g:#4cf2a0;--ln:#1f3328}}
+:root[data-theme="dark"]{--bg:#0a0a0a;--sf:#111a15;--ink:#e9efe9;--mu:#8fa396;--g:#4cf2a0;--ln:#1f3328}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:560px;margin:0 auto;padding:18px 16px 56px}
+h1{font:700 2.1rem/1.1 Georgia,"Times New Roman",serif;margin:0 0 6px;letter-spacing:-.01em}
+.sub{color:var(--mu);margin:0 0 14px}
+nav{display:flex;gap:8px;margin-bottom:12px}
+button{font:inherit;color:var(--ink);background:var(--sf);border:1px solid var(--ln);border-radius:6px;padding:8px 14px;cursor:pointer}
+button[aria-pressed="true"]{border-color:var(--g);color:var(--g)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--g);outline-offset:2px}
+canvas{display:block;margin:0 auto;touch-action:manipulation}
+#card{margin-top:14px;padding-top:16px;border-top:1px solid var(--ln)}
+.meta{color:var(--mu);font-size:.92rem}
+h2{font:700 1.5rem/1.25 Georgia,"Times New Roman",serif;margin:2px 0 10px}
+.q{margin:12px 0 0}.q b{color:var(--g);font-weight:600}
+.src{margin:12px 0 0;font-size:.95rem}
+a{color:var(--g)}
+.note,.next{color:var(--mu);font-size:.88rem;margin-top:12px}
+.grp{margin-top:24px}.grp h2{font-size:1.2rem}
+.it{padding:10px 0;border-top:1px solid var(--ln)}
+.it small{display:block;color:var(--mu)}
+.ck{color:var(--g)}
+#v2{display:none}
+</style>
+</head>
+<body>
+<main>
+<h1>Say / Do</h1>
+<p class="sub">One corporate say-versus-do signal a day. Then it stops.</p>
+<nav><button id="b1" aria-pressed="true">Radar</button><button id="b2" aria-pressed="false">Sources</button></nav>
+<section id="v1">
+<canvas id="rd" aria-label="Radar of past signals. Tap a blip to open it."></canvas>
+<div id="card"></div>
+<p class="next" id="nx"></p>
+<p class="note">Distance from the centre shows how long ago the key event happened. Tap a blip to revisit a past signal. Faint dots are decoration, not data.</p>
+<p class="note" id="up"></p>
+</section>
+<section id="v2"></section>
+</main>
+<script>
+var Y=new Date().getFullYear(),SEC=["Climate","Product","Reporting","Supply chain"];
+var E=[
+{c:"ExxonMobil",s:0,y:1977,j:-14,t:"Climate, 1977 to 2003",say:"Publicly, the company stressed doubt about climate science.",rec:"A 2023 peer-reviewed study found most of its own scientists’ temperature projections between 1977 and 2003 matched the warming that followed.",l:[["Science, 2023","https://doi.org/10.1126/science.abk0063"]],tier:"Peer-reviewed study"},
+{c:"Volkswagen",s:1,y:2015,j:10,t:"Product claims, 2015",say:"The company marketed its diesel cars as “clean diesel.”",rec:"The US EPA found software in the cars that detected emissions tests and reduced controls in normal driving. Volkswagen later pleaded guilty to US criminal charges.",l:[["US EPA: Volkswagen violations","https://www.epa.gov/vw/learn-about-volkswagen-violations"]],tier:"Regulator finding"},
+{c:"2,048 Global Compact signatories",s:2,y:2011,j:-10,t:"Reporting, 2011",say:"Each signed up to the UN Global Compact’s ten principles on human rights, labour, environment and anti-corruption.",rec:"By January 2011 they had been expelled for repeatedly failing to report their progress.",l:[["UN Global Compact announcement, 2011","https://drupal.unglobalcompact.org/news/95-01-20-2011"]],tier:"Official announcement"},
+{c:"Major chocolate makers",s:3,y:2001,j:12,t:"Supply chain, 2001 to 2020",say:"In 2001 the industry’s Harkin–Engel Protocol pledged to end the worst forms of child labour in cocoa, with a 2005 target.",rec:"Deadlines were pushed back repeatedly, and a 2020 University of Chicago (NORC) study still found widespread child labour in cocoa farming in Côte d’Ivoire and Ghana.",l:[],tier:"Academic study (find the link before relying on it)"}
+];
+var G=[
+["Say: claims and commitments",[
+["UN Global Compact participants","https://unglobalcompact.org/what-is-gc/participants","Who signed up, reporting status, delistings",1],
+["CDP","https://www.cdp.net","Self-reported climate, forests and water disclosures",0],
+["Science Based Targets initiative","https://sciencebasedtargets.org","Which corporate climate targets are validated",0],
+["Transition Pathway Initiative","https://www.transitionpathwayinitiative.org","Company targets set against climate pathways",0],
+["Forest 500","https://forest500.org","Deforestation commitments of major companies and financiers",0],
+["World Benchmarking Alliance","https://www.worldbenchmarkingalliance.org","Corporate human rights and nature benchmarks",0]]],
+["Do: lobbying and influence",[
+["LobbyFacts","https://lobbyfacts.eu","Declared EU lobby spend and meetings, built on official data",1],
+["EU Transparency Register","https://transparency-register.europa.eu","The official register behind LobbyFacts",0],
+["InfluenceMap LobbyMap","https://lobbymap.org","Scores climate policy engagement for 500 companies and 250 associations",1],
+["Corporate Europe Observatory","https://corporateeurope.org","Lobbying investigations and a research toolbox",1],
+["OpenSecrets","https://www.opensecrets.org","US lobbying and political spending",0],
+["UK Registrar of Consultant Lobbyists","https://registrarofconsultantlobbyists.org.uk","UK consultant lobbyist register",0]]],
+["Investigations and money flows",[
+["SOMO","https://www.somo.nl","Independent research on multinationals, supply chains and tax",1],
+["Follow the Money","https://www.ftm.eu","Investigations into money flows in and around the EU",1],
+["The Good Lobby","https://thegoodlobby.eu","Lobbying transparency and meeting record analysis",1],
+["Earthsight","https://www.earthsight.org.uk","Investigations into commodity supply chains",1],
+["Global Witness","https://www.globalwitness.org","Environmental and corruption investigations",0],
+["OCCRP","https://www.occrp.org","Cross-border organised crime and corruption reporting",0],
+["ICIJ","https://www.icij.org","Leak-based investigations into offshore finance",0]]],
+["Legal and regulatory evidence",[
+["OECD Watch","https://www.oecdwatch.org","Complaints against companies under OECD guidelines",1],
+["Business and Human Rights Resource Centre","https://www.business-humanrights.org","Allegations tracked with company responses",1],
+["UK Advertising Standards Authority rulings","https://www.asa.org.uk/codes-and-rulings/rulings.html","Rulings on misleading environmental claims",0],
+["SEC EDGAR","https://www.sec.gov/edgar","US company filings",0],
+["Companies House","https://find-and-update.company-information.service.gov.uk","UK company filings and ownership",0],
+["OpenSanctions","https://www.opensanctions.org","Sanctions and politically exposed person data",0]]]
+];
+function $(i){return document.getElementById(i)}
+var T=0,sel=0;
+function show(i){
+var e=E[i],h='<p class="meta">'+(i===T?"Today’s signal":"From the archive")+', '+e.t+'</p><h2>'+e.c+'</h2>'+
+'<p class="q"><b>They said.</b> '+e.say+'</p><p class="q"><b>The record.</b> '+e.rec+'</p>'+
+'<p class="src"><span class="meta">'+e.tier+'</span>'+e.l.map(function(l){return '<br><a href="'+l[1]+'" target="_blank" rel="noopener">'+l[0]+'</a>'}).join("")+'</p>'+
+(i===T?"":'<p class="src"><button id="bk">Back to today</button></p>')+
+'<p class="note">Sample entry for the design. Confirm it against the source and check the company’s own response before sharing.</p>';
+$("card").innerHTML=h;var b=$("bk");if(b)b.onclick=function(){pick(T)}}
+function pick(i){sel=i;show(i);if(still)draw(0)}
+function tick(){var n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1),s=Math.floor((m-n)/1000),p=function(v){return(v<10?"0":"")+v};
+$("nx").textContent="Next signal in "+p(Math.floor(s/3600))+":"+p(Math.floor(s%3600/60))+":"+p(s%60)}
+var cv=$("rd"),cx=cv.getContext("2d"),W=300,DPR=window.devicePixelRatio||1,P=[],D=[],sd=7;
+var still=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+for(var i=0;i<18;i++){sd=(sd*9301+49297)%233280;var a0=sd/233280*6.2832;sd=(sd*9301+49297)%233280;D.push([a0,.15+sd/233280*.8])}
+function fit(){W=Math.min($("v1").clientWidth||300,520);cv.style.width=cv.style.height=W+"px";cv.width=cv.height=Math.round(W*DPR);cx.setTransform(DPR,0,0,DPR,0,0);
+var R=W/2*.86;P=E.map(function(e){var th=(e.s*90+45+e.j)*Math.PI/180,r=Math.max(.12,Math.min(.95,(Y-e.y)/50))*R;return{x:W/2+r*Math.sin(th),y:W/2-r*Math.cos(th),th:th}})}
+function draw(t){
+var c=W/2,R=c*.86,a=still?5.2:(t/7000*6.2832)%6.2832,k;
+cx.clearRect(0,0,W,W);
+var g=cx.createRadialGradient(c,c,0,c,c,R);g.addColorStop(0,"#0c1e15");g.addColorStop(1,"#07100b");
+cx.fillStyle=g;cx.beginPath();cx.arc(c,c,R,0,6.2832);cx.fill();
+cx.strokeStyle="rgba(76,242,160,.24)";cx.lineWidth=1;
+for(k=1;k<=5;k++){cx.beginPath();cx.arc(c,c,R*k/5,0,6.2832);cx.stroke()}
+cx.beginPath();cx.moveTo(c,c-R);cx.lineTo(c,c+R);cx.moveTo(c-R,c);cx.lineTo(c+R,c);cx.stroke();
+for(var d=0;d<360;d+=10){var q=d*Math.PI/180,l=d%30?4:9;cx.beginPath();cx.moveTo(c+R*Math.sin(q),c-R*Math.cos(q));cx.lineTo(c+(R-l)*Math.sin(q),c-(R-l)*Math.cos(q));cx.stroke()}
+cx.fillStyle="rgba(143,163,150,.85)";cx.font="10px ui-monospace,Menlo,monospace";cx.textAlign="left";
+for(k=1;k<=5;k++)cx.fillText(k*10+"y",c+4,c-R*k/5+11);
+cx.textAlign="right";cx.fillText(SEC[0],W-6,14);cx.fillText(SEC[1],W-6,W-6);
+cx.textAlign="left";cx.fillText(SEC[2],6,W-6);cx.fillText(SEC[3],6,14);
+if(!still)for(k=0;k<36;k++){var ca=a-Math.PI/2-k*.025;cx.fillStyle="rgba(76,242,160,"+(.26*(1-k/36)).toFixed(3)+")";cx.beginPath();cx.moveTo(c,c);cx.arc(c,c,R,ca-.025,ca);cx.closePath();cx.fill()}
+cx.strokeStyle="rgba(76,242,160,.9)";cx.beginPath();cx.moveTo(c,c);cx.lineTo(c+R*Math.sin(a),c-R*Math.cos(a));cx.stroke();
+D.forEach(function(p){var x=c+p[1]*R*Math.sin(p[0]),y=c-p[1]*R*Math.cos(p[0]),dl=((a-p[0])%6.2832+6.2832)%6.2832;
+cx.fillStyle="rgba(76,242,160,"+(.06+.3*Math.exp(-dl*1.2)).toFixed(3)+")";cx.beginPath();cx.arc(x,y,1.6,0,6.2832);cx.fill()});
+E.forEach(function(e,i){var p=P[i],dl=((a-p.th)%6.2832+6.2832)%6.2832,b=still?1:.4+.6*Math.exp(-dl*.8);
+cx.fillStyle="rgba(76,242,160,"+b.toFixed(3)+")";cx.beginPath();cx.arc(p.x,p.y,i===T?6:4.5,0,6.2832);cx.fill();
+if(i===sel){cx.strokeStyle="#e9efe9";cx.lineWidth=1.5;cx.beginPath();cx.arc(p.x,p.y,11,0,6.2832);cx.stroke()}
+if(i===T&&!still){var u=(t%2000)/2000;cx.strokeStyle="rgba(76,242,160,"+(.7*(1-u)).toFixed(3)+")";cx.lineWidth=1;cx.beginPath();cx.arc(p.x,p.y,6+u*22,0,6.2832);cx.stroke()}})}
+function loop(t){draw(t);if(!still)requestAnimationFrame(loop)}
+cv.addEventListener("pointerdown",function(ev){var r=cv.getBoundingClientRect(),x=ev.clientX-r.left,y=ev.clientY-r.top,best=-1,bd=26;
+P.forEach(function(p,i){var d=Math.hypot(p.x-x,p.y-y);if(d<bd){bd=d;best=i}});if(best>=0)pick(best)});
+function sources(){$("v2").innerHTML='<p class="sub">Starting points for the “do” side and the “say” side. Entries marked checked were confirmed while researching this tool. Check the rest before relying on them.</p>'+
+G.map(function(g){return '<div class="grp"><h2>'+g[0]+'</h2>'+g[1].map(function(s){return '<div class="it"><a href="'+s[1]+'" target="_blank" rel="noopener">'+s[0]+'</a><small>'+s[2]+' <span class="'+(s[3]?"ck":"")+'">'+(s[3]?"Checked":"Check before use")+'</span></small></div>'}).join("")+'</div>'}).join("")}
+function tab(n){$("v1").style.display=n===1?"block":"none";$("v2").style.display=n===2?"block":"none";$("b1").setAttribute("aria-pressed",n===1);$("b2").setAttribute("aria-pressed",n===2);if(n===1){fit();if(still)draw(0)}}
+$("b1").onclick=function(){tab(1)};$("b2").onclick=function(){tab(2)};
+window.addEventListener("resize",function(){fit();if(still)draw(0)});
+function es(x){return String(x==null?"":x).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function hs(t){var h=0;for(var i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))>>>0;return h}
+function norm(g){return{c:es(g.company),s:Math.max(0,SEC.indexOf(g.issue)),y:+g.year,j:hs(String(g.id))%25-12,t:es(g.label),say:es(g.say),rec:es(g.record),tier:es(g.tier),l:(g.links||[]).filter(function(k){return /^https?:\/\//.test(k.url)}).map(function(k){return[es(k.title),es(k.url)]})}}
+function start(){T=Math.floor((Date.now()-new Date().getTimezoneOffset()*6e4)/864e5)%E.length;sel=T;fit();show(T);tick();setInterval(tick,1000);requestAnimationFrame(loop)}
+sources();
+fetch("signals.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():Promise.reject()}).then(function(j){var p=(j.signals||[]).filter(function(g){return g.status==="published"});if(p.length){E=p.map(norm);if(j.updated)$("up").textContent="Data updated "+j.updated+"."}}).catch(function(){}).then(start);
+</script>
+</body>
+</html>
